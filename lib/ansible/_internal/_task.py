@@ -832,7 +832,7 @@ class UnifiedTaskResult:
 
     ansible_facts: dict[str, t.Any] | None = dataclasses.field(default=None, metadata=import_export())
     async_result: dict[str, t.Any] | None = dataclasses.field(default=None, metadata=export_only())
-    ansible_parsed: bool | None = None  # formerly _ansible_parsed
+    ansible_parsed: bool | None = dataclasses.field(default=None, metadata=import_export(destination=Destination.NOT_CALLBACK))  # formerly _ansible_parsed
     exception: _messages.ErrorSummary | None = dataclasses.field(default=None, metadata=import_export())
     finished: bool | None = dataclasses.field(default=None, metadata=import_export())
     msg: object | None = dataclasses.field(default=None, metadata=import_export())
@@ -944,6 +944,12 @@ class UnifiedTaskResult:
 
         for key, value in result.items():
             if resolved_field := fields.get(key):
+                # deprecated: description='uncomment to enable user-facing warnings for modules/actions returning skipped' core_version='2.23'
+                # if key == 'skipped':
+                #     display.deprecated(
+                #         msg="Returning 'skipped' from a module or action plugin is deprecated.",
+                #         version="2.25",
+                #     )
                 if resolved_field is DROP_AND_WARN:
                     display.warning(f"Removed reserved key {key!r} from module result.", obj=value)
                 else:

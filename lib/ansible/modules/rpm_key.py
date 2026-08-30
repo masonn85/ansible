@@ -96,7 +96,7 @@ import typing as _t
 
 # import module snippets
 from ansible.module_utils.basic import AnsibleModule
-from ansible.module_utils.urls import fetch_url, is_fetch_success
+from ansible.module_utils.urls import fetch_url, is_fetch_success, mask_url
 from ansible.module_utils.compat.version import LooseVersion
 from ansible.module_utils.common.text.converters import to_native
 
@@ -160,6 +160,9 @@ class LibRPM:
         """
         pkt = ctypes.POINTER(ctypes.c_uint8)()
         pktlen = ctypes.c_size_t()
+
+        if not armor.endswith("\n"):
+            armor += "\n"
 
         armor_bytes = armor.encode()
         result = self._lib.pgpParsePkts(armor_bytes, ctypes.byref(pkt), ctypes.byref(pktlen))
@@ -476,11 +479,11 @@ class RpmKey(object):
         rsp, info = fetch_url(self.module, url)
 
         if not is_fetch_success(info):
-            self.module.fail_json(msg="failed to fetch key at %s , error was: %s" % (url, info['msg']))
+            self.module.fail_json(msg="failed to fetch key at %s , error was: %s" % (mask_url(url), info['msg']))
 
         key = rsp.read()
         if not is_pubkey(key):
-            self.module.fail_json(msg="Not a public key: %s" % url)
+            self.module.fail_json(msg="Not a public key: %s" % mask_url(url))
         tmpfd, tmpname = tempfile.mkstemp()
         self.module.add_cleanup_file(tmpname)
         with os.fdopen(tmpfd, "w+b") as tmpfile:
